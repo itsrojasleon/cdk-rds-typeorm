@@ -1,21 +1,101 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	cdk "github.com/aws/aws-cdk-go/awscdk/v2"
+	codebuild "github.com/aws/aws-cdk-go/awscdk/v2/awscodebuild"
+	codestarconnections "github.com/aws/aws-cdk-go/awscdk/v2/awscodestarconnections"
 	ec2 "github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
+	iam "github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	rds "github.com/aws/aws-cdk-go/awscdk/v2/awsrds"
 	secretsmanager "github.com/aws/aws-cdk-go/awscdk/v2/awssecretsmanager"
+	pipelines "github.com/aws/aws-cdk-go/awscdk/v2/pipelines"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
 
-type InfraStackProps struct {
+type Props struct {
 	cdk.StackProps
 }
 
-func NewInfraStack(scope constructs.Construct, id string, props *InfraStackProps) cdk.Stack {
+type PipelineStackProps struct {
+	cdk.StackProps
+	Stage  string
+	Branch string
+}
+
+func NewPipelineStack(scope constructs.Construct, id string, props *PipelineStackProps) cdk.Stack {
+	var sprops cdk.StackProps
+	if props != nil {
+		sprops = props.StackProps
+	}
+	stack := cdk.NewStack(scope, &id, &sprops)
+
+	role := iam.NewRole(stack, jsii.String("Role"), &iam.RoleProps{
+		AssumedBy: iam.NewServicePrincipal(jsii.String("codestar.amazonaws.com"), &iam.ServicePrincipalOpts{}),
+	})
+
+	codestarConn := codestarconnections.NewCfnConnection(stack, jsii.String("Connection"), &codestarconnections.CfnConnectionProps{
+		ConnectionName: jsii.String("cdkRdsTypeormConnection"),
+		ProviderType:   jsii.String("GitHub"),
+	})
+
+	role.AddToPolicy(iam.NewPolicyStatement(&iam.PolicyStatementProps{
+		Actions: &[]*string{
+			jsii.String("codestar-connections:UseConnection"),
+		},
+		Resources: &[]*string{
+			codestarConn.AttrConnectionArn(),
+		},
+	}))
+
+	pipeline := pipelines.NewCodePipeline(stack, jsii.String("Pipeline"), &pipelines.CodePipelineProps{
+		CodeBuildDefaults: &pipelines.CodeBuildOptions{
+			Timeout: cdk.Duration_Minutes(jsii.Number(25)),
+			BuildEnvironment: &codebuild.BuildEnvironment{
+				BuildImage:  codebuild.LinuxBuildImage_STANDARD_6_0(),
+				ComputeType: codebuild.LinuxBuildImage_AMAZON_LINUX_2_ARM_2().DefaultComputeType(),
+			},
+		},
+		SynthCodeBuildDefaults: &pipelines.CodeBuildOptions{
+			PartialBuildSpec: codebuild.BuildSpec_FromObject(&map[string]interface{}{
+				"version": jsii.String("0.2"),
+				"phases": map[string]interface{}{
+					"install": map[string]interface{}{
+						"runtime-versions": map[string]interface{}{
+							"nodejs": jsii.String("16.x"),
+						},
+					},
+				},
+			}),
+		},
+		Synth: pipelines.NewShellStep(jsii.String("Synth"), &pipelines.ShellStepProps{
+			Input: pipelines.CodePipelineSource_Connection(
+				jsii.String("rojasleon/cdk-rds-typeorm"),
+				jsii.String("testing"),
+				&pipelines.ConnectionSourceOptions{
+					ConnectionArn: codestarConn.AttrConnectionArn(),
+				},
+			),
+			Commands: &[]*string{
+				jsii.String("cd infra"),
+				jsii.String("npx cdk synth -c stage=" + props.Stage),
+			},
+			PrimaryOutputDirectory: jsii.String("infra/cdk.out"),
+		}),
+	})
+
+	pipeline.AddStage(
+		NewAppStage(stack, jsii.String(props.Stage), cdk.StageProps{}),
+		&pipelines.AddStageOpts{},
+	)
+
+	return stack
+}
+
+func NewInfraStack(scope constructs.Construct, id string, props *Props) cdk.Stack {
 	var sprops cdk.StackProps
 	if props != nil {
 		sprops = props.StackProps
@@ -23,8 +103,8 @@ func NewInfraStack(scope constructs.Construct, id string, props *InfraStackProps
 	stack := cdk.NewStack(scope, &id, &sprops)
 
 	vpc := ec2.NewVpc(stack, jsii.String("VPC"), &ec2.VpcProps{
-		MaxAzs: jsii.Number(2),
-		Cidr:   jsii.String("15.0.0.0/16"),
+		MaxAzs:      jsii.Number(2),
+		IpAddresses: ec2.IpAddresses_Cidr(jsii.String("15.0.0.0/16")),
 	})
 
 	// TODO: First deploy the vpc and see their default subnets
@@ -138,18 +218,39 @@ func NewInfraStack(scope constructs.Construct, id string, props *InfraStackProps
 	return stack
 }
 
+func NewAppStage(scope constructs.Construct, id *string, props cdk.StageProps) cdk.Stage {
+	stage := cdk.NewStage(scope, id, &props)
+
+	NewInfraStack(stage, "InfraStack", &Props{
+		cdk.StackProps{Env: props.Env},
+	})
+	return stage
+}
+
 func main() {
 	defer jsii.Close()
 
+	allowedStages := map[string]string{
+		"test": "testing",
+		"prod": "production",
+	}
+
 	app := cdk.NewApp(nil)
+	stage := app.Node().Root().Node().TryGetContext(jsii.String("stage"))
 
-	NewInfraStack(app, "InfraStack", &InfraStackProps{
-		cdk.StackProps{
-			Env: env(),
-		},
-	})
+	if branch, ok := allowedStages[stage.(string)]; ok {
+		NewPipelineStack(app, "PipelineStack", &PipelineStackProps{
+			Stage:  stage.(string),
+			Branch: branch,
+			StackProps: cdk.StackProps{
+				Env: env(),
+			},
+		})
 
-	app.Synth(nil)
+		app.Synth(nil)
+	} else {
+		panic(fmt.Sprintf("Stage %s not found in allowed stages", stage))
+	}
 }
 
 func env() *cdk.Environment {
