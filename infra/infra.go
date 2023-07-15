@@ -52,7 +52,24 @@ func NewPipelineStack(scope constructs.Construct, id string, props *PipelineStac
 	}))
 
 	pipeline := pipelines.NewCodePipeline(stack, jsii.String("Pipeline"), &pipelines.CodePipelineProps{
+		Role: iam.NewRole(stack, jsii.String("PipelineRole"), &iam.RoleProps{
+			AssumedBy: iam.NewServicePrincipal(jsii.String("codepipeline.amazonaws.com"), &iam.ServicePrincipalOpts{}),
+		}),
 		CodeBuildDefaults: &pipelines.CodeBuildOptions{
+			RolePolicy: &[]iam.PolicyStatement{
+				iam.NewPolicyStatement(&iam.PolicyStatementProps{
+					Actions: &[]*string{jsii.String("ssm:GetParameter")},
+					Resources: &[]*string{
+						jsii.String("arn:aws:ssm:us-east-1:813618179182:parameter/cdk-bootstrap/hnb659fds/version"),
+					},
+				}),
+				iam.NewPolicyStatement(&iam.PolicyStatementProps{
+					Actions: &[]*string{jsii.String("sts:AssumeRole")},
+					Resources: &[]*string{
+						jsii.String("arn:aws:iam::813618179182:role/cdk-hnb659fds-deploy-role-813618179182-us-east-1"),
+					},
+				}),
+			},
 			Timeout: cdk.Duration_Minutes(jsii.Number(25)),
 			BuildEnvironment: &codebuild.BuildEnvironment{
 				BuildImage:  codebuild.LinuxBuildImage_STANDARD_6_0(),
