@@ -6,6 +6,20 @@ const serverlessConfig: AWS = {
   provider: {
     name: 'aws',
     runtime: 'nodejs18.x',
+    iam: {
+      role: '${cf:InfraStack.LambdaExecutionRoleArn}'
+    },
+    // iam: {
+    //   role: {
+    //     statements: [
+    //       {
+    //         Effect: 'Allow',
+    //         Action: ['secretsmanager:GetSecretValue'],
+    //         Resource: [] // add imports
+    //       }
+    //     ]
+    //   }
+    // },
     vpc: {
       securityGroupIds: ['${cf:InfraStack.LambdaSecurityGroupId}'],
       subnetIds: [
