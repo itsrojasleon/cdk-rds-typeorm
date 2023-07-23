@@ -38,10 +38,6 @@ export class DatabaseStack extends cdk.Stack {
       }),
       instanceProps: {
         vpc: props.vpc,
-        instanceType: ec2.InstanceType.of(
-          ec2.InstanceClass.T3,
-          ec2.InstanceSize.SMALL
-        ),
         securityGroups: [props.databaseSecurityGroup]
       },
       instances: 2,
