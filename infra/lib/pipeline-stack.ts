@@ -25,7 +25,7 @@ export class PipelineStack extends cdk.Stack {
       this,
       'codestarConnection',
       {
-        connectionName: 'eProvidersWebAdmin',
+        connectionName: 'personalGithubConnection',
         providerType: 'GitHub'
       }
     );
@@ -43,16 +43,14 @@ export class PipelineStack extends cdk.Stack {
       codeBuildDefaults: {
         timeout: cdk.Duration.minutes(25),
         buildEnvironment: {
-          buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_4,
+          buildImage: codebuild.LinuxBuildImage.STANDARD_6_0,
           computeType: codebuild.ComputeType.MEDIUM
-        }
-      },
-      synthCodeBuildDefaults: {
+        },
         partialBuildSpec: codebuild.BuildSpec.fromObject({
           phases: {
             install: {
               'runtime-versions': {
-                nodejs: '18.x'
+                nodejs: '16.x'
               }
             }
           }
