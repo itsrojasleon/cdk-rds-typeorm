@@ -34,7 +34,7 @@ export class DatabaseStack extends cdk.Stack {
 
     const database = new rds.DatabaseCluster(this, 'Database', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_12_7
+        version: rds.AuroraPostgresEngineVersion.VER_14_6
       }),
       instanceProps: {
         vpc: props.vpc,
