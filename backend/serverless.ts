@@ -7,24 +7,15 @@ const serverlessConfig: AWS = {
     name: 'aws',
     runtime: 'nodejs18.x',
     iam: {
-      role: '${cf:InfraStack.LambdaExecutionRoleArn}'
+      role: '${cf:${self:custom.stackNames.${self:provider.stage}}.roleArn}'
     },
-    // iam: {
-    //   role: {
-    //     statements: [
-    //       {
-    //         Effect: 'Allow',
-    //         Action: ['secretsmanager:GetSecretValue'],
-    //         Resource: [] // add imports
-    //       }
-    //     ]
-    //   }
-    // },
     vpc: {
-      securityGroupIds: ['${cf:InfraStack.LambdaSecurityGroupId}'],
+      securityGroupIds: [
+        '${cf:${self:custom.stackNames.${self:provider.stage}}.LambdaSecurityGroupId}'
+      ],
       subnetIds: [
-        '${cf:InfraStack.LambdaSubnet1Id}',
-        '${cf:InfraStack.LambdaSubnet2Id}'
+        '${cf:${self:custom.stackNames.${self:provider.stage}}.LambdaSubnet1Id}',
+        '${cf:${self:custom.stackNames.${self:provider.stage}}.LambdaSubnet2Id}'
       ]
     }
   },
@@ -32,11 +23,14 @@ const serverlessConfig: AWS = {
     create: {
       handler: 'src/lambdas/create.handler',
       environment: {
-        DB_NAME: '${cf:InfraStack.DatabaseName}',
-        DB_HOST: '${cf:InfraStack.DatabaseHostname}',
+        DB_NAME:
+          '${cf:${self:custom.stackNames.${self:provider.stage}}.DatabaseName}',
+        DB_HOST:
+          '${cf:${self:custom.stackNames.${self:provider.stage}}.DatabaseHostname}',
         // We'll use secrets manager to retrieve the username and password
         // based on the secret ARN.
-        DB_SECRET_NAME: '${cf:InfraStack.DatabaseSecretName}'
+        DB_SECRET_NAME:
+          '${cf:${self:custom.stackNames.${self:provider.stage}}.DatabaseSecretName}'
       },
       events: [
         {
@@ -47,7 +41,18 @@ const serverlessConfig: AWS = {
         }
       ]
     }
-  }
+  },
+  custom: {
+    esbuild: {
+      bundle: true,
+      minify: true
+    },
+    stackNames: {
+      test: 'test-AppStacksDatabaseStack03564B8C',
+      prod: 'TODO:'
+    }
+  },
+  plugins: ['serverless-esbuild']
 };
 
 module.exports = serverlessConfig;
