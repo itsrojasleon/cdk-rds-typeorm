@@ -46,13 +46,13 @@ export class PipelineStack extends cdk.Stack {
           buildImage: codebuild.LinuxArmBuildImage.fromCodeBuildImageId(
             'aws/codebuild/amazonlinux2-aarch64-standard:3.0'
           ),
-          computeType: codebuild.ComputeType.MEDIUM
+          computeType: codebuild.ComputeType.SMALL
         },
         partialBuildSpec: codebuild.BuildSpec.fromObject({
           phases: {
             install: {
               'runtime-versions': {
-                nodejs: '16.x'
+                nodejs: '18.x'
               }
             }
           }
