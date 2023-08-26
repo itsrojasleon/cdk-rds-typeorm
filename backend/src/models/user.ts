@@ -10,4 +10,7 @@ export class User extends BaseEntity {
 
   @Column()
   description!: string;
+
+  @Column({ nullable: true })
+  removeThisField?: string;
 }
