@@ -43,7 +43,9 @@ export class PipelineStack extends cdk.Stack {
       codeBuildDefaults: {
         timeout: cdk.Duration.minutes(25),
         buildEnvironment: {
-          buildImage: codebuild.LinuxBuildImage.STANDARD_6_0,
+          buildImage: codebuild.LinuxArmBuildImage.fromCodeBuildImageId(
+            'aws/codebuild/amazonlinux2-aarch64-standard:3.0'
+          ),
           computeType: codebuild.ComputeType.MEDIUM
         },
         partialBuildSpec: codebuild.BuildSpec.fromObject({
