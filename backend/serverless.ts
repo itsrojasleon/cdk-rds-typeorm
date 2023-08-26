@@ -27,8 +27,6 @@ const serverlessConfig: AWS = {
           '${cf:${self:custom.stackNames.${self:provider.stage}}.DatabaseName}',
         DB_HOST:
           '${cf:${self:custom.stackNames.${self:provider.stage}}.DatabaseHostname}',
-        // We'll use secrets manager to retrieve the username and password
-        // based on the secret ARN.
         DB_SECRET_NAME:
           '${cf:${self:custom.stackNames.${self:provider.stage}}.DatabaseSecretName}'
       },

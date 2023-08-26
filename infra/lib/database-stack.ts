@@ -16,6 +16,10 @@ export class DatabaseStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: StackProps) {
     super(scope, id, props);
 
+    this.buildRelationalDatabase(props);
+  }
+
+  private buildRelationalDatabase(props: StackProps) {
     const secret = new secretsmanager.Secret(this, 'Credentials', {
       generateSecretString: {
         secretStringTemplate: '{"username": "justme"}',
@@ -44,8 +48,7 @@ export class DatabaseStack extends cdk.Stack {
       instances: 2,
       credentials: rds.Credentials.fromSecret(secret, 'justme'),
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      // Change in a serious app.
-      deletionProtection: false
+      deletionProtection: false // Change in a serious app.
     });
 
     new cdk.CfnOutput(this, 'DatabaseHostname', {

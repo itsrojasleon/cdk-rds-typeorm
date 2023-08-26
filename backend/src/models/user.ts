@@ -9,5 +9,5 @@ export class User extends BaseEntity {
   name!: string;
 
   @Column()
-  isHuman!: boolean;
+  description!: string;
 }
