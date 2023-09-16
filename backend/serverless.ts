@@ -7,28 +7,20 @@ const serverlessConfig: AWS = {
     name: 'aws',
     runtime: 'nodejs18.x',
     iam: {
-      role: '${cf:${self:custom.stackNames.${self:provider.stage}}.roleArn}'
+      role: '${cf:PermissionsStack.roleArn}'
     },
     vpc: {
-      securityGroupIds: [
-        '${cf:${self:custom.stackNames.${self:provider.stage}}.LambdaSecurityGroupId}'
-      ],
-      subnetIds: [
-        '${cf:${self:custom.stackNames.${self:provider.stage}}.LambdaSubnet1Id}',
-        '${cf:${self:custom.stackNames.${self:provider.stage}}.LambdaSubnet2Id}'
-      ]
+      securityGroupIds: ['${cf:NetworkingStack.LambdaSecurityGroupId}'],
+      subnetIds: ['subnet-001413bef0c35ba96', 'subnet-06f4cb0ce6bec1075']
     }
   },
   functions: {
     create: {
       handler: 'src/lambdas/create.handler',
       environment: {
-        DB_NAME:
-          '${cf:${self:custom.stackNames.${self:provider.stage}}.DatabaseName}',
-        DB_HOST:
-          '${cf:${self:custom.stackNames.${self:provider.stage}}.DatabaseHostname}',
-        DB_SECRET_NAME:
-          '${cf:${self:custom.stackNames.${self:provider.stage}}.DatabaseSecretName}'
+        DB_NAME: '${cf:DatabaseStack.DatabaseName}',
+        DB_HOST: '${cf:DatabaseStack.DatabaseHostname}',
+        DB_SECRET_NAME: '${cf:DatabaseStack.DatabaseSecretName}'
       },
       events: [
         {
@@ -44,10 +36,6 @@ const serverlessConfig: AWS = {
     esbuild: {
       bundle: true,
       minify: true
-    },
-    stackNames: {
-      test: 'test-AppStacksDatabaseStack03564B8C',
-      prod: 'TODO:'
     }
   },
   plugins: ['serverless-esbuild']

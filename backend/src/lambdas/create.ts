@@ -6,7 +6,9 @@ export const handler: APIGatewayProxyHandlerV2 = async () => {
   const dataSource = await getDataSource();
 
   try {
-    await dataSource.initialize();
+    const x = await dataSource.initialize();
+
+    console.log('x', x);
 
     const user = await User.create({
       name: 'name',
@@ -24,7 +26,8 @@ export const handler: APIGatewayProxyHandlerV2 = async () => {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        message: 'Internal server error'
+        message: 'Internal server error',
+        error: err
       })
     };
   } finally {

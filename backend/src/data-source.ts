@@ -16,6 +16,8 @@ export const getDataSource = async () => {
   const { dbUsername, dbPassword } = await getDatatabaseCredentials(
     process.env.DB_SECRET_NAME
   );
+  console.log('dbUsername', dbUsername);
+  console.log('dbPassword', dbPassword);
 
   return new DataSource({
     type: 'postgres',
@@ -25,6 +27,10 @@ export const getDataSource = async () => {
     password: dbPassword,
     port: 5432,
     ssl: true,
-    entities: [User]
+    logging: true,
+    entities: [User],
+    synchronize: true
+    // migrationsRun: false,
+    // migrations: ['src/migrations/*.ts']
   });
 };

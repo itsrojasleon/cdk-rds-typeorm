@@ -2,15 +2,15 @@ import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class User extends BaseEntity {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ type: 'int' })
   id!: number;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   description!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   removeThisField?: string;
 }
