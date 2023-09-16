@@ -4,7 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy": "sls deploy --stage $npm_config_stage",
+    "remove": "sls remove --stage $npm_config_stage",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli -d ./src/d",
+    "migration:create": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli migration:create ./src/migrations/$npm_config_name",
+    "migration:generate": "npm run typeorm -- migration:generate ./src/migrations/$npm_config_name",
+    "migration:run": "npm run typeorm -- migration:run",
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "schema:sync": "npm run typeorm -- schema:sync"
   },
   "keywords": [],
   "author": "",
@@ -16,9 +23,12 @@
     "@types/node": "^20.4.1",
     "esbuild": "^0.18.11",
     "serverless-esbuild": "^1.45.1",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "pg": "^8.11.3",
     "typeorm": "^0.3.17"
   }
 }

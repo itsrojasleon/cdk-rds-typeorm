@@ -1,61 +1,18 @@
-import {
-  GetSecretValueCommand,
-  SecretsManagerClient
-} from '@aws-sdk/client-secrets-manager';
 import { APIGatewayProxyHandlerV2 } from 'aws-lambda';
-import { DataSource } from 'typeorm';
+import { getDataSource } from '../data-source';
 import { User } from '../models/user';
 
-const secrets = new SecretsManagerClient({});
-
 export const handler: APIGatewayProxyHandlerV2 = async () => {
+  const dataSource = await getDataSource();
+
   try {
-    if (!process.env.DB_NAME) throw new Error('DB_NAME is not set');
-    if (!process.env.DB_HOST) throw new Error('DB_HOST is not set');
-    if (!process.env.DB_SECRET_NAME)
-      throw new Error('DB_SECRET_NAME is not set');
+    const x = await dataSource.initialize();
 
-    const secretId = process.env.DB_SECRET_NAME;
-
-    const { SecretString } = await secrets.send(
-      new GetSecretValueCommand({
-        SecretId: secretId
-      })
-    );
-
-    if (!SecretString) throw new Error('SecretString is not set');
-
-    let dbUsername = '';
-    let dbPassword = '';
-
-    try {
-      const { username, password } = JSON.parse(SecretString);
-
-      if (!username) throw new Error('username is not set in SecretString');
-      if (!password) throw new Error('password is not set in SecretString');
-
-      dbUsername = username;
-      dbPassword = password;
-    } catch (err) {
-      throw new Error('SecretString is not a valid JSON');
-    }
-
-    const dataSource = new DataSource({
-      type: 'postgres',
-      database: process.env.DB_NAME,
-      host: process.env.DB_HOST,
-      username: dbUsername,
-      password: dbPassword,
-      port: 5432, // Maybe use as env var?
-      ssl: true,
-      entities: [User]
-    });
-
-    await dataSource.initialize();
+    console.log('x', x);
 
     const user = await User.create({
-      name: 'John Doe',
-      isHuman: true
+      name: 'name',
+      description: 'description'
     });
 
     return {
@@ -69,8 +26,11 @@ export const handler: APIGatewayProxyHandlerV2 = async () => {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        message: 'Internal server error'
+        message: 'Internal server error',
+        error: err
       })
     };
+  } finally {
+    await dataSource?.destroy();
   }
 };

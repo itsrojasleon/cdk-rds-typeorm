@@ -6,23 +6,21 @@ const serverlessConfig: AWS = {
   provider: {
     name: 'aws',
     runtime: 'nodejs18.x',
+    iam: {
+      role: '${cf:PermissionsStack.roleArn}'
+    },
     vpc: {
-      securityGroupIds: ['${cf:InfraStack.LambdaSecurityGroupId}'],
-      subnetIds: [
-        '${cf:InfraStack.LambdaSubnet1Id}',
-        '${cf:InfraStack.LambdaSubnet2Id}'
-      ]
+      securityGroupIds: ['${cf:NetworkingStack.LambdaSecurityGroupId}'],
+      subnetIds: ['subnet-001413bef0c35ba96', 'subnet-06f4cb0ce6bec1075']
     }
   },
   functions: {
     create: {
       handler: 'src/lambdas/create.handler',
       environment: {
-        DB_NAME: '${cf:InfraStack.DatabaseName}',
-        DB_HOST: '${cf:InfraStack.DatabaseHostname}',
-        // We'll use secrets manager to retrieve the username and password
-        // based on the secret ARN.
-        DB_SECRET_NAME: '${cf:InfraStack.DatabaseSecretName}'
+        DB_NAME: '${cf:DatabaseStack.DatabaseName}',
+        DB_HOST: '${cf:DatabaseStack.DatabaseHostname}',
+        DB_SECRET_NAME: '${cf:DatabaseStack.DatabaseSecretName}'
       },
       events: [
         {
@@ -33,7 +31,14 @@ const serverlessConfig: AWS = {
         }
       ]
     }
-  }
+  },
+  custom: {
+    esbuild: {
+      bundle: true,
+      minify: true
+    }
+  },
+  plugins: ['serverless-esbuild']
 };
 
 module.exports = serverlessConfig;
